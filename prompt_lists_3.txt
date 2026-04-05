@@ -1,0 +1,79 @@
+• create new files math_operations.h, math_operations.cpp and add func int add(int a, int b) in header file
+
+flie math_operations.cpp
+#include "math_operations.h"
+
+int add(int a, int b) {
+    return a + b;
+}
+
+flie math_operations.h
+#ifndef MATH_OPERATIONS_H
+#define MATH_OPERATIONS_H
+
+/**
+ * @brief Adds two integers together
+ * @param a First integer operand
+ * @param b Second integer operand
+ * @return Sum of the two integers
+ */
+int add(int a, int b);
+
+#endif // MATH_OPERATIONS_H
+
+• create new tests folder with file unit_tests.cpp, and write some tests
+
+flie tests/unit_tests.cpp
+#include "../math_operations.h"
+#include <gtest/gtest.h>
+
+TEST(MathOperationsTest, Add) {
+    EXPECT_EQ(add(2, 3), 5);
+    EXPECT_EQ(add(-1, 1), 0);
+    EXPECT_EQ(add(0, 0), 0);
+    EXPECT_EQ(add(-5, -7), -12);
+    EXPECT_EQ(add(100, 200), 300);
+}
+
+• add google test support in CMakeLists.txt, add some instrunction for creating executable test file and run tests
+
+file CMakeLists.txt
+cmake_minimum_required(VERSION 3.10)
+
+project(Project1 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Main executable
+add_executable(Project1 
+    main.cpp
+    math_operations.cpp
+)
+
+# GoogleTest support
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+# Unit test executable
+add_executable(unit_tests
+    tests/unit_tests.cpp
+    math_operations.cpp
+)
+
+target_link_libraries(unit_tests
+    gtest_main
+)
+
+target_include_directories(unit_tests PRIVATE ${gtest_SOURCE_DIR}/include)
+
+include(GoogleTest)
+gtest_discover_tests(unit_tests)
