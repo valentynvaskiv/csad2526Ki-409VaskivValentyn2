@@ -29,3 +29,31 @@ add_executable(Lab1
 target_link_libraries(Lab1
   PRIVATE math_operations
 )
+
+# ========== Tests ==========
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+  enable_testing()
+  include(FetchContent)
+
+  # стабільна версія googletest
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  # Для Windows: не міняти CRT налаштування батьківського проєкту
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+
+  add_executable(unit_tests
+    tests/unit_tests.cpp   # <-- правильний шлях
+  )
+  target_link_libraries(unit_tests
+    PRIVATE GTest::gtest_main math_operations
+  )
+
+  include(GoogleTest)
+  gtest_discover_tests(unit_tests)
+endif()
