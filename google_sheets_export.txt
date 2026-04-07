@@ -1,0 +1,87 @@
+function exportSheetToGitHub() {
+  // --- НАЛАШТУВАННЯ ---
+  const GITHUB_TOKEN = 'ВСТАВТЕ_ТУТ_ВАШ_ТОКЕН'; // Вставте актуальний токен
+  const REPO_OWNER = 'viktorlevytskyiki2022-tech';
+  const REPO_NAME = 'csad-task1';
+  const FILE_PATH = 'input/groups.csv';
+  const SHEET_NAME = 'Список';
+  const BRANCH = 'main'; // Ваша гілка
+  // ---------------------
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  
+  if (!sheet) {
+    Logger.log(`ПОМИЛКА: Вкладку "${SHEET_NAME}" не знайдено.`);
+    return;
+  }
+
+  Logger.log("Починаю конвертацію даних...");
+  const data = sheet.getDataRange().getValues();
+  const csvContent = convertToCSV(data);
+  const contentEncoded = Utilities.base64Encode(csvContent, Utilities.Charset.UTF_8);
+  
+  Logger.log("Перевіряю, чи файл існує на GitHub...");
+  const fileSha = getFileSha(REPO_OWNER, REPO_NAME, FILE_PATH, GITHUB_TOKEN);
+  
+  const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+  const payload = {
+    message: `Update ${FILE_PATH} via Apps Script`,
+    content: contentEncoded,
+    branch: BRANCH
+  };
+
+  if (fileSha) {
+    payload.sha = fileSha;
+    Logger.log("Файл знайдено, будемо оновлювати.");
+  } else {
+    Logger.log("Файл не знайдено, створюємо новий.");
+  }
+
+  const options = {
+    method: 'put',
+    headers: {
+      'Authorization': 'token ' + GITHUB_TOKEN,
+      'Accept': 'application/vnd.github.v3+json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  Logger.log("Відправляю запит на GitHub...");
+  const response = UrlFetchApp.fetch(url, options);
+  const jsonResponse = JSON.parse(response.getContentText());
+
+  if (response.getResponseCode() === 200 || response.getResponseCode() === 201) {
+    Logger.log("✅ УСПІХ! Файл завантажено.");
+  } else {
+    Logger.log("❌ ПОМИЛКА: " + jsonResponse.message);
+    Logger.log("Деталі: " + JSON.stringify(jsonResponse));
+  }
+}
+
+function getFileSha(owner, repo, path, token) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=master`;
+  const options = {
+    method: 'get',
+    headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' },
+    muteHttpExceptions: true
+  };
+  const response = UrlFetchApp.fetch(url, options);
+  if (response.getResponseCode() === 200) {
+    return JSON.parse(response.getContentText()).sha;
+  }
+  return null;
+}
+
+function convertToCSV(data) {
+  return data.map(row => 
+    row.map(cell => {
+      let stringCell = String(cell);
+      if (stringCell.includes(",") || stringCell.includes("\n") || stringCell.includes('"')) {
+        stringCell = '"' + stringCell.replace(/"/g, '""') + '"';
+      }
+      return stringCell;
+    }).join(",")
+  ).join("\n");
+}
