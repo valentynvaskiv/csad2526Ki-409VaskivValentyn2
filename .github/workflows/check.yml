@@ -1,0 +1,21 @@
+name: Run Checker on File Upload
+
+on:
+  push:
+    paths:
+      - 'input/**/*.csv'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - run: pip install -r requirements.txt
+      - run: python checker.py
+      - uses: actions/upload-artifact@v3
+        with:
+          name: output
+          path: output/
